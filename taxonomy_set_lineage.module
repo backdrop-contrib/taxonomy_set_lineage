@@ -1,0 +1,101 @@
+<?php
+
+
+
+/* implements hook_menu */
+function taxonomy_set_lineage_menu() {
+       $items['admin/config/content/taxonomy_set_lineage'] = array(
+  'title' => 'Taxonomy Set Lineage',
+  'description' => 'Configuration for the Taxonomy Set Lineage module.',
+  'page callback' => 'drupal_get_form',
+  'page arguments' => array('taxonomy_set_lineage_config_form'),
+  'access arguments' => array('administer site'),
+  'type' => MENU_NORMAL_ITEM,
+);
+
+   return $items;
+}
+
+
+// the configuration form
+
+function taxonomy_set_lineage_config_form($form, &$form_state) {
+
+    $form['taxonomy_set_lineage_affected_taxonomies'] = array (
+    '#type' => 'checkboxes',
+     '#title' => t('Taxonomies with Lineage'),
+      '#options' => array(),
+       '#description' => t('For which taxonomy vocabularies should all parent terms of selected terms also be set?'),
+     '#default_value' => variable_get('taxonomy_set_lineage_affected_taxonomies', 0),
+    );
+
+    foreach (taxonomy_vocabulary_get_names() as $vocab) {
+        $form['taxonomy_set_lineage_affected_taxonomies']['#options'][$vocab->machine_name] = check_plain($vocab->name);
+    }
+
+    return system_settings_form($form);  // thanks drupal!
+}
+
+
+// implementation of hook_node_save  // NEEED TO GET A FIELD HERE!
+function taxonomy_set_lineage_node_presave($node) {
+    $wanted_vocabs = variable_get('taxonomy_set_lineage_affected_taxonomies', NULL);
+
+    foreach ($wanted_vocabs as $wanted_vocab) {
+        if ( $wanted_vocab !== 0 ) {
+            //dpm($wanted_vocab);
+
+            list($id, $vid, $bundle) = entity_extract_ids('node', $node);
+            //dpm($bundle);
+
+            foreach (field_info_instances('node', $bundle) as $instance) {
+              $field = field_info_field_by_id($instance['field_id']);
+              $field_id = $field['id'];
+              $field_name = $field['field_name'];
+              if ($field['type'] === 'taxonomy_term_reference' ) {
+                  $vocab_machine_name = $field['settings']['allowed_values'][0]['vocabulary'];
+              //    dpm($vocab_machine_name);
+                  // if the vocab we are looking for is the same as the nodes vocab... get the field name and run the activate parents function
+                  if ($vocab_machine_name === $wanted_vocab) {
+                        taxonomy_set_lineage_activate_parents($node, $field_name);
+                //        dpm("kablooie");
+                  }
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
+
+// pass in node, field_name we want to set all parent terms for all leaf terms that are set;
+function taxonomy_set_lineage_activate_parents($node_object, $tax_field_name) {
+    $lang = $node_object->language;
+
+    //print_r($node_object->{$tax_field_name}[$lang]);
+
+    $child_tids = $node_object->{$tax_field_name}[$lang];
+    foreach ($child_tids as $leaf)  {
+
+        // get full ancestry of term... carefull, it includes our term also
+        $parent_term_objects = taxonomy_get_parents_all($leaf['tid']);
+        //dpm($parent_term_objects );
+
+        foreach ( $parent_term_objects as $parent ) {
+
+            if ($leaf['tid'] !=$parent->tid) {  // if not same as current term
+                $node_object->{$tax_field_name}[$lang][] = array('tid' => $parent->tid);
+                // dpm("actually did something");
+            }
+         }
+    }
+
+}
+
+
+
+
+
