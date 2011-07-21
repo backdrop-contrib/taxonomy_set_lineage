@@ -37,28 +37,26 @@ function taxonomy_set_lineage_config_form($form, &$form_state) {
 }
 
 
-// implementation of hook_node_save  // NEEED TO GET A FIELD HERE!
-function taxonomy_set_lineage_node_presave($node) {
+// implements hook_entity_presave
+function taxonomy_set_lineage_entity_presave($entity, $type) {
     $wanted_vocabs = variable_get('taxonomy_set_lineage_affected_taxonomies', NULL);
 
     foreach ($wanted_vocabs as $wanted_vocab) {
         if ( $wanted_vocab !== 0 ) {
-            //dpm($wanted_vocab);
 
-            list($id, $vid, $bundle) = entity_extract_ids('node', $node);
-            //dpm($bundle);
+            list($id, $vid, $bundle) = entity_extract_ids($type, $entity);
 
-            foreach (field_info_instances('node', $bundle) as $instance) {
+            foreach (field_info_instances($type, $bundle) as $instance) {
               $field = field_info_field_by_id($instance['field_id']);
               $field_id = $field['id'];
               $field_name = $field['field_name'];
               if ($field['type'] === 'taxonomy_term_reference' ) {
                   $vocab_machine_name = $field['settings']['allowed_values'][0]['vocabulary'];
-              //    dpm($vocab_machine_name);
-                  // if the vocab we are looking for is the same as the nodes vocab... get the field name and run the activate parents function
+
+                  // if the vocab we are looking for is the same as the entity's attached vocab... get the field name and run the activate parents function
                   if ($vocab_machine_name === $wanted_vocab) {
-                        taxonomy_set_lineage_activate_parents($node, $field_name);
-                //        dpm("kablooie");
+                        taxonomy_set_lineage_activate_parents($entity, $field_name);
+
                   }
                 }
 
@@ -71,27 +69,30 @@ function taxonomy_set_lineage_node_presave($node) {
 }
 
 
-// pass in node, field_name we want to set all parent terms for all leaf terms that are set;
-function taxonomy_set_lineage_activate_parents($node_object, $tax_field_name) {
-    $lang = $node_object->language;
+// pass in entity, field_name we want to set all parent terms for all leaf terms that are set;
+function taxonomy_set_lineage_activate_parents($entity, $tax_field_name) {
+    $lang = $entity->language;
 
-    //print_r($node_object->{$tax_field_name}[$lang]);
 
-    $child_tids = $node_object->{$tax_field_name}[$lang];
+    $child_tids = $entity->{$tax_field_name}[$lang];
     foreach ($child_tids as $leaf)  {
 
         // get full ancestry of term... carefull, it includes our term also
         $parent_term_objects = taxonomy_get_parents_all($leaf['tid']);
-        //dpm($parent_term_objects );
+
 
         foreach ( $parent_term_objects as $parent ) {
 
-            if ($leaf['tid'] !=$parent->tid) {  // if not same as current term
-                $node_object->{$tax_field_name}[$lang][] = array('tid' => $parent->tid);
-                // dpm("actually did something");
+            if ($leaf['tid'] !== $parent->tid) {  // if not same as current term
+
+                $entity->{$tax_field_name}[$lang][] = array('tid' => $parent->tid);
+
+
             }
          }
     }
+
+
 
 }
 
