@@ -1,28 +1,12 @@
 <?php
 
 /*
- *      This program is free software; you can redistribute it and/or modify
- *      it under the terms of the GNU General Public License as published by
- *      the Free Software Foundation; either version 2 of the License, or
- *      (at your option) any later version.
- *
- *      This program is distributed in the hope that it will be useful,
- *      but WITHOUT ANY WARRANTY; without even the implied warranty of
- *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *      GNU General Public License for more details.
- *
- *      You should have received a copy of the GNU General Public License
- *      along with this program; if not, write to the Free Software
- *      Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- *      MA 02110-1301, USA.
- *
  *      Copyright 2011 wegewerk gmbh
  */
 
-
 /* implements hook_menu */
 function taxonomy_set_lineage_menu() {
-       $items['admin/config/content/taxonomy_set_lineage'] = array(
+   $items['admin/config/content/taxonomy_set_lineage'] = array(
   'title' => 'Taxonomy Set Lineage',
   'description' => 'Configuration for the Taxonomy Set Lineage module.',
   'page callback' => 'drupal_get_form',
@@ -38,7 +22,6 @@ function taxonomy_set_lineage_menu() {
 // the configuration form
 
 function taxonomy_set_lineage_config_form($form, &$form_state) {
-
     $form['taxonomy_set_lineage_affected_taxonomies'] = array (
     '#type' => 'checkboxes',
      '#title' => t('Taxonomies with Lineage'),
@@ -59,7 +42,6 @@ function taxonomy_vocab_to_instance_field_name($entity, $entity_type, $taxonomy_
     list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
     foreach (field_info_instances($entity_type, $bundle) as $instance) {
         $field = field_info_field_by_id($instance['field_id']);
-        //dpm($field);
         if ($field['type'] === 'taxonomy_term_reference' ) {
           $found_vocab_machine_name = $field['settings']['allowed_values'][0]['vocabulary'];
           // if the vocab we are looking for is the same as the entity's attached vocab...
@@ -73,7 +55,6 @@ function taxonomy_vocab_to_instance_field_name($entity, $entity_type, $taxonomy_
 // implements hook_entity_presave to set parents when node is saved
 function taxonomy_set_lineage_entity_presave($entity, $type) {
     $wanted_vocabs = variable_get('taxonomy_set_lineage_affected_taxonomies', NULL);
-	//dpm("fired on node");
     foreach ($wanted_vocabs as $wanted_vocab) {
         if ( $wanted_vocab !== 0 ) {
             $field_name = taxonomy_vocab_to_instance_field_name($entity, $type, $wanted_vocab);
@@ -99,8 +80,3 @@ function taxonomy_set_lineage_activate_parents($entity, $tax_field_name) {
          }
     }
 }
-
-
-
-
-
