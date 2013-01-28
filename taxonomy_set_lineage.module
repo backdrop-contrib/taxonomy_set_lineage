@@ -1,5 +1,19 @@
 <?php
 
+
+/**
+ * @file
+ * Enables the organization of content into categories.
+ */
+
+/**
+ * Users can create new terms in a free-tagging vocabulary when
+ * submitting a taxonomy_autocomplete_widget. We store a term object
+ * whose tid is 'autocreate' as a field data item during widget
+ * validation and then actually create the term if/when that field
+ * data item makes it to taxonomy_field_insert/update().
+ */
+
 /**
  * Implements hook_menu().
  */
@@ -9,7 +23,7 @@ function taxonomy_set_lineage_menu() {
     'description' => 'Configuration for the Taxonomy Set Lineage module.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('taxonomy_set_lineage_config_form'),
-    'access arguments' => array('administer site'),
+    'access arguments' => array('administer taxonomy'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 10,
   );
@@ -17,11 +31,10 @@ function taxonomy_set_lineage_menu() {
 }
 
 /**
- * the configuration form
+ * Our configuration form
  * 
- * @param type $form
- * @param type $form_state
- * @return type
+ * @param $form
+ * @param $form_state
  */
 function taxonomy_set_lineage_config_form($form, &$form_state) {
   $form['taxonomy_set_lineage_affected_taxonomies'] = array(
@@ -37,8 +50,6 @@ function taxonomy_set_lineage_config_form($form, &$form_state) {
   }
   return system_settings_form($form);  // thanks drupal!
 }
-
-
 
 /**
  * Implements hook_entity_presave().
@@ -63,10 +74,15 @@ function taxonomy_set_lineage_entity_presave($entity, $type) {
 /**
  * Helper function to find out which with which field name a taxonomy is attached to an entity
  * 
- * @param type $entity
- * @param type $entity_type
- * @param type $taxonomy_machine_name
- * @return type
+ * @param $entity
+ *    The entity being saved.
+ * @param $entity_type
+ *   The type of the entity being saved.
+ * @param $taxonomy_machine_name
+ *   The machine name of the taxonomy for which we want to set parentage
+ * 
+ * @return 
+ *   The machine name of the field which we want to manipulate
  */
 function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_type, $taxonomy_machine_name) {
   list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
@@ -82,17 +98,24 @@ function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_typ
   }
 }
 
-
-// pass in entity, field_name we want to set all parent terms for all leaf terms that are set;
+/**
+ * Activates all parent terms of any changed terms.
+ * 
+ * For all languages that are set on this vocabulary we check to see if they 
+ * are changed from original entity i.e. were they just edited?
+ * If so, we pull down their terms and save lineage (all parent terms) on them. 
+ * This follows the principle of least surprise, and prevents us from having 
+ * to do heuristics about the translation context.
+ * 
+ * @param $entity
+ *    The entity being saved.
+ * @param $type
+ *   The type of the entity being saved.
+ * @param $tax_field_name
+ *   The machine name of the field which we want to manipulate
+ */
 function _taxonomy_set_lineage_activate_parents($entity, $type, $tax_field_name) {
-  // for all languages that are set on this vocab,
-  // we check to see if they are changed from original entity... 
-  // i.e. were they just edited?
-  // if so, we pull down their terms and save lineage on them
-  // this is is the principle of least surprise, and prevents us from having 
-  // to do heuristics about what is currently going on in the translation
-  //  context.
-  
+
   // is there somethng to do?
   if (isset($entity->{$tax_field_name}) && is_array($entity->{$tax_field_name})) {
     foreach ($entity->{$tax_field_name} as $lang_code => $language) {
@@ -127,7 +150,5 @@ function _taxonomy_set_lineage_activate_parents($entity, $type, $tax_field_name)
         }
       }
     }
-  } else {
-    return false;
-  }
+  } 
 }
