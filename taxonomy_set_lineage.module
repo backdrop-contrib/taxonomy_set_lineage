@@ -4,35 +4,70 @@
  * Implements hook_menu().
  */
 function taxonomy_set_lineage_menu() {
-  $items['admin/config/content/taxonomy_set_lineage'] = array(
+  $items['admin/structure/taxonomy/taxonomy_set_lineage'] = array(
     'title' => 'Taxonomy Set Lineage',
     'description' => 'Configuration for the Taxonomy Set Lineage module.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('taxonomy_set_lineage_config_form'),
     'access arguments' => array('administer site'),
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
   );
   return $items;
 }
 
-// the configuration form
+/**
+ * the configuration form
+ * 
+ * @param type $form
+ * @param type $form_state
+ * @return type
+ */
 function taxonomy_set_lineage_config_form($form, &$form_state) {
   $form['taxonomy_set_lineage_affected_taxonomies'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('Taxonomies with Lineage'),
+    '#title' => t('Set lineage in the following vocabularies:'),
     '#options' => array(),
-    '#description' => t('For which taxonomy vocabularies should all parent terms of selected terms also be set?'),
+    '#description' => t('Checked vocabularies will have parent terms of all selected terms automatically checked.  For instance, in a hypothetical vocabulary "Geography", if "Berlin" is checked, parent terms "Germany" and "Europe" would be automatically checked.  This behavior is true for any field referencing this vocabulary. Note that this does not change rules about the total number of terms that can be selected in a given field or field instance.'),
     '#default_value' => variable_get('taxonomy_set_lineage_affected_taxonomies', 0),
   );
 
   foreach (taxonomy_vocabulary_get_names() as $vocab) {
     $form['taxonomy_set_lineage_affected_taxonomies']['#options'][$vocab->machine_name] = check_plain($vocab->name);
   }
-
   return system_settings_form($form);  // thanks drupal!
 }
 
-// helper function to find out which with which field name a taxonomy is attached to an entity
+
+
+/**
+ * Implements hook_entity_presave().
+ * 
+ * Sets parent terms when entity is saved
+ */
+function taxonomy_set_lineage_entity_presave($entity, $type) {
+
+  $wanted_vocabs = variable_get('taxonomy_set_lineage_affected_taxonomies', NULL);
+  if (isset($wanted_vocabs)) {
+    foreach ($wanted_vocabs as $wanted_vocab) {
+      if ($wanted_vocab !== 0) {
+        $field_name = _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $type, $wanted_vocab);
+        if (!empty($field_name)) {
+          _taxonomy_set_lineage_activate_parents($entity, $type, $field_name);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Helper function to find out which with which field name a taxonomy is attached to an entity
+ * 
+ * @param type $entity
+ * @param type $entity_type
+ * @param type $taxonomy_machine_name
+ * @return type
+ */
 function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_type, $taxonomy_machine_name) {
   list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
   foreach (field_info_instances($entity_type, $bundle) as $instance) {
@@ -48,36 +83,51 @@ function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_typ
 }
 
 
-/**
- * Implements hook_entity_presave().
- * 
- * Sets parent terms when entity is saved
- */
-function taxonomy_set_lineage_entity_presave($entity, $type) {
-  $wanted_vocabs = variable_get('taxonomy_set_lineage_affected_taxonomies', NULL);
-  if (isset($wanted_vocabs)) {
-    foreach ($wanted_vocabs as $wanted_vocab) {
-      if ($wanted_vocab !== 0) {
-        $field_name = _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $type, $wanted_vocab);
-        if (!empty($field_name)) {
-          taxonomy_set_lineage_activate_parents($entity, $type, $field_name);
+// pass in entity, field_name we want to set all parent terms for all leaf terms that are set;
+function _taxonomy_set_lineage_activate_parents($entity, $type, $tax_field_name) {
+  // for all languages that are set on this vocab,
+  // we check to see if they are changed from original entity... 
+  // i.e. were they just edited?
+  // if so, we pull down their terms and save lineage on them
+  // this is is the principle of least surprise, and prevents us from having 
+  // to do heuristics about what is currently going on in the translation
+  //  context.
+  
+  // is there somethng to do?
+  if (isset($entity->{$tax_field_name}) && is_array($entity->{$tax_field_name})) {
+    foreach ($entity->{$tax_field_name} as $lang_code => $language) {
+      // check for changes
+      $language_changed = FALSE;
+      $tidsnew = array();
+      foreach ($language as $term) {
+        // accrete term names into a string that can be compared with original entity
+        $tidsnew[] .= isset($term['tid']) ? $term['tid'] : NULL;
+      }
+      // pull the old entity equivalent of this language
+      $tidsold = array();
+      if (isset($entity->original->{$tax_field_name}[$lang_code])) {
+        foreach ($entity->original->{$tax_field_name}[$lang_code] as $term) {
+          // accrete term names into a string that can be compared with original entity
+          $tidsold[] .= isset($term['tid']) ? $term['tid'] : NULL;
+        }
+      }
+      // are there changes?
+      asort($tidsnew);
+      asort($tidsold);
+      if (count(array_diff($tidsnew, $tidsold)) > 0) {
+        // then do it!
+        foreach ($language as $term) {
+          // get full ancestry of term... carefull, it includes our term also
+          $parent_term_objects = taxonomy_get_parents_all($term['tid']);
+          foreach ($parent_term_objects as $parent) {
+            if ($term['tid'] !== $parent->tid) {  // if not same as current term
+              $entity->{$tax_field_name}[$lang_code][] = array('tid' => $parent->tid);
+            }
+          }
         }
       }
     }
-  }
-}
-
-// pass in entity, field_name we want to set all parent terms for all leaf terms that are set;
-function taxonomy_set_lineage_activate_parents($entity, $type, $tax_field_name) {
-  $lang = entity_language($type, $entity);
-  $child_tids = (isset($entity->{$tax_field_name}[$lang])) ? $entity->{$tax_field_name}[$lang] : $entity->{$tax_field_name}['und'];
-  foreach ($child_tids as $leaf) {
-    // get full ancestry of term... carefull, it includes our term also
-    $parent_term_objects = taxonomy_get_parents_all($leaf['tid']);
-    foreach ($parent_term_objects as $parent) {
-      if ($leaf['tid'] !== $parent->tid) {  // if not same as current term
-        $entity->{$tax_field_name}[$lang][] = array('tid' => $parent->tid);
-      }
-    }
+  } else {
+    return false;
   }
 }
