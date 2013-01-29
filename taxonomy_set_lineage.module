@@ -3,15 +3,7 @@
 
 /**
  * @file
- * Enables the organization of content into categories.
- */
-
-/**
- * Users can create new terms in a free-tagging vocabulary when
- * submitting a taxonomy_autocomplete_widget. We store a term object
- * whose tid is 'autocreate' as a field data item during widget
- * validation and then actually create the term if/when that field
- * data item makes it to taxonomy_field_insert/update().
+ * Taxonomy set Lineage makes sure that for given vocabularies, parent terms are also selected
  */
 
 /**
@@ -31,10 +23,12 @@ function taxonomy_set_lineage_menu() {
 }
 
 /**
- * Our configuration form
+ * Our configuration form.
  * 
  * @param $form
+ *   The configuration form
  * @param $form_state
+ *   The configuration form state
  */
 function taxonomy_set_lineage_config_form($form, &$form_state) {
   $form['taxonomy_set_lineage_affected_taxonomies'] = array(
@@ -90,7 +84,7 @@ function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_typ
     $field = field_info_field_by_id($instance['field_id']);
     if ($field['type'] === 'taxonomy_term_reference') {
       $found_vocab_machine_name = $field['settings']['allowed_values'][0]['vocabulary'];
-      // if the vocab we are looking for is the same as the entity's attached vocab...
+      // If the vocab we are looking for is found in field, return field name.
       if ($found_vocab_machine_name === $taxonomy_machine_name) {
         return $field['field_name'];
       }
@@ -116,34 +110,34 @@ function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_typ
  */
 function _taxonomy_set_lineage_activate_parents($entity, $type, $tax_field_name) {
 
-  // is there somethng to do?
+  // Is there something to do?
   if (isset($entity->{$tax_field_name}) && is_array($entity->{$tax_field_name})) {
     foreach ($entity->{$tax_field_name} as $lang_code => $language) {
-      // check for changes
+      // Two loops to check for changes.
       $language_changed = FALSE;
+      // First the new state.
       $tidsnew = array();
       foreach ($language as $term) {
-        // accrete term names into a string that can be compared with original entity
         $tidsnew[] .= isset($term['tid']) ? $term['tid'] : NULL;
       }
-      // pull the old entity equivalent of this language
+      // Now the old version of the entity.
       $tidsold = array();
       if (isset($entity->original->{$tax_field_name}[$lang_code])) {
         foreach ($entity->original->{$tax_field_name}[$lang_code] as $term) {
-          // accrete term names into a string that can be compared with original entity
           $tidsold[] .= isset($term['tid']) ? $term['tid'] : NULL;
         }
       }
-      // are there changes?
+      // Are there changes?
       asort($tidsnew);
       asort($tidsold);
       if (count(array_diff($tidsnew, $tidsold)) > 0) {
-        // then do it!
+        // Then do it!
         foreach ($language as $term) {
-          // get full ancestry of term... carefull, it includes our term also
+          // Get full ancestry of term... carefull, it includes our term also.
           $parent_term_objects = taxonomy_get_parents_all($term['tid']);
           foreach ($parent_term_objects as $parent) {
-            if ($term['tid'] !== $parent->tid) {  // if not same as current term
+            // Filter out ourselves.
+            if ($term['tid'] !== $parent->tid) {  
               $entity->{$tax_field_name}[$lang_code][] = array('tid' => $parent->tid);
             }
           }

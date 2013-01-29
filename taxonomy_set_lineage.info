@@ -1,5 +1,4 @@
 name = Taxonomy Set Lineage
-description = Makes sure that for given fields, parent terms are also selected
+description = Automatically selects parent terms in chosen vocabularies
 core = 7.x
-
 

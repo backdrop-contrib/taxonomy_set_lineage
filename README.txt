@@ -1,3 +1,5 @@
+Taxonomy set Lineage
+
 This is a small module that allows users to tag a heirarchical taxonomy 
 as requiring each parent term of a selected term to be automatically selected.
 
@@ -13,4 +15,6 @@ By selecting the "Geography" taxonomy in the module administration screens,
 a user can ensure that these parent terms are selected and heirarchical 
 taxonomies become more powerful.
 
-Configuration screens are found at admin/config/content/taxonomy_set_lineage
+Configuration can be found at admin/structure/taxonomy/taxonomy_set_lineage or 
+on the Taxonomy set Lineage tab visible on the taxonomy administration screen.
+
