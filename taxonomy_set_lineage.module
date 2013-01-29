@@ -30,9 +30,9 @@ function taxonomy_set_lineage_menu() {
 /**
  * Our configuration form.
  * 
- * @param $form
+ * @param array $form
  *   The configuration form
- * @param $form_state
+ * @param array $form_state
  *   The configuration form state
  */
 function taxonomy_set_lineage_config_form($form, &$form_state) {
@@ -43,7 +43,6 @@ function taxonomy_set_lineage_config_form($form, &$form_state) {
     '#description' => t('Checked vocabularies will have parent terms of all selected terms automatically checked.  For instance, in a hypothetical vocabulary "Geography", if "Berlin" is checked, parent terms "Germany" and "Europe" would be automatically checked.  This behavior is true for any field referencing this vocabulary. Note that this does not change rules about the total number of terms that can be selected in a given field or field instance.'),
     '#default_value' => variable_get('taxonomy_set_lineage_affected_taxonomies', 0),
   );
-
   foreach (taxonomy_vocabulary_get_names() as $vocab) {
     $form['taxonomy_set_lineage_affected_taxonomies']['#options'][$vocab->machine_name] = check_plain($vocab->name);
   }
@@ -63,7 +62,7 @@ function taxonomy_set_lineage_entity_presave($entity, $type) {
       if ($wanted_vocab !== 0) {
         $field_name = _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $type, $wanted_vocab);
         if (!empty($field_name)) {
-          _taxonomy_set_lineage_activate_parents($entity, $type, $field_name);
+          _taxonomy_set_lineage_activate_parents($entity, $field_name);
         }
       }
     }
@@ -73,11 +72,11 @@ function taxonomy_set_lineage_entity_presave($entity, $type) {
 /**
  * Finds out which entity field name contains reference to sought taxonomy.
  * 
- * @param $entity
+ * @param object $entity
  *   The entity being saved.
- * @param $entity_type
+ * @param string $entity_type
  *   The type of the entity being saved.
- * @param $taxonomy_machine_name
+ * @param string $taxonomy_machine_name
  *   The machine name of the taxonomy for which we want to set parentage
  * 
  * @return string
@@ -106,15 +105,12 @@ function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_typ
  * This follows the principle of least surprise, and prevents us from having 
  * to do heuristics about the translation context.
  * 
- * @param $entity
+ * @param object $entity
  *   The entity being saved.
- * @param $type
- *   The type of the entity being saved.
- * @param $tax_field_name
+ * @param string $tax_field_name
  *   The machine name of the field which we want to manipulate
  */
-function _taxonomy_set_lineage_activate_parents($entity, $type, $tax_field_name) {
-
+function _taxonomy_set_lineage_activate_parents($entity, $tax_field_name) {
   // Is there something to do?
   if (isset($entity->{$tax_field_name}) && is_array($entity->{$tax_field_name})) {
     foreach ($entity->{$tax_field_name} as $lang_code => $language) {
