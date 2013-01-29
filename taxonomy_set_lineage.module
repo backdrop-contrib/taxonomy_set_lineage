@@ -71,8 +71,7 @@ function taxonomy_set_lineage_entity_presave($entity, $type) {
 }
 
 /**
- * Helper function to find out which with which field name a taxonomy is 
- * attached to an entity.
+ * Finds out which entity field name contains reference to sought taxonomy.
  * 
  * @param $entity
  *   The entity being saved.
