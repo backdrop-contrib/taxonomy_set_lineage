@@ -3,7 +3,12 @@
 
 /**
  * @file
- * Taxonomy set Lineage makes sure that for given vocabularies, parent terms are also selected
+ * Taxonomy set Lineage makes sure that for chosen vocabularies, parent terms 
+ * are also selected.  
+ * 
+ * If any vocabularies are have lineage set, we check entities when they are
+ * saved to see if they have fields referring to these vocabularies.  If so,
+ * we automatically select all parent terms of manually selected terms.
  */
 
 /**
@@ -42,7 +47,7 @@ function taxonomy_set_lineage_config_form($form, &$form_state) {
   foreach (taxonomy_vocabulary_get_names() as $vocab) {
     $form['taxonomy_set_lineage_affected_taxonomies']['#options'][$vocab->machine_name] = check_plain($vocab->name);
   }
-  return system_settings_form($form);  // thanks drupal!
+  return system_settings_form($form);
 }
 
 /**
@@ -66,16 +71,17 @@ function taxonomy_set_lineage_entity_presave($entity, $type) {
 }
 
 /**
- * Helper function to find out which with which field name a taxonomy is attached to an entity
+ * Helper function to find out which with which field name a taxonomy is 
+ * attached to an entity.
  * 
  * @param $entity
- *    The entity being saved.
+ *   The entity being saved.
  * @param $entity_type
  *   The type of the entity being saved.
  * @param $taxonomy_machine_name
  *   The machine name of the taxonomy for which we want to set parentage
  * 
- * @return 
+ * @return string
  *   The machine name of the field which we want to manipulate
  */
 function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_type, $taxonomy_machine_name) {
@@ -102,7 +108,7 @@ function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_typ
  * to do heuristics about the translation context.
  * 
  * @param $entity
- *    The entity being saved.
+ *   The entity being saved.
  * @param $type
  *   The type of the entity being saved.
  * @param $tax_field_name
@@ -137,12 +143,12 @@ function _taxonomy_set_lineage_activate_parents($entity, $type, $tax_field_name)
           $parent_term_objects = taxonomy_get_parents_all($term['tid']);
           foreach ($parent_term_objects as $parent) {
             // Filter out ourselves.
-            if ($term['tid'] !== $parent->tid) {  
+            if ($term['tid'] !== $parent->tid) {
               $entity->{$tax_field_name}[$lang_code][] = array('tid' => $parent->tid);
             }
           }
         }
       }
     }
-  } 
+  }
 }
