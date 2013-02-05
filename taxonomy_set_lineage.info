@@ -2,3 +2,4 @@ name = Taxonomy Set Lineage
 description = Automatically selects parent terms in chosen vocabularies
 core = 7.x
 dependencies[] = taxonomy
+package = Taxonomy
