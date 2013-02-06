@@ -93,9 +93,7 @@ function _taxonomy_set_lineage_activate_parents($entity, $tax_field_name) {
   // Is there something to do?
   if (isset($entity->{$tax_field_name}) && is_array($entity->{$tax_field_name})) {
     foreach ($entity->{$tax_field_name} as $lang_code => $language) {
-      // Two loops to check for changes.
-      $language_changed = FALSE;
-      // First the new state.
+      // Two loops to check for changes. First the new state.
       $tidsnew = array();
       foreach ($language as $term) {
         $tidsnew[] .= isset($term['tid']) ? $term['tid'] : NULL;
