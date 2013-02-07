@@ -111,8 +111,8 @@ function _taxonomy_set_lineage_activate_parents($entity, $tax_field_name) {
         }
       }
       // Are there changes?
-      asort($tidsnew);
-      asort($tidsold);
+      sort($tidsnew);
+      sort($tidsold);
       if (count(array_diff($tidsnew, $tidsold)) > 0 || count(array_diff($tidsold, $tidsnew)) > 0 ) {
         // This field and language have changed tids, select parents of selected tids.
         $adding_tids = array();  
