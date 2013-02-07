@@ -36,7 +36,7 @@ function taxonomy_set_lineage_menu() {
 function taxonomy_set_lineage_entity_presave($entity, $type) {
 
   $wanted_vocabs = variable_get('taxonomy_set_lineage_affected_taxonomies', array());
-  if (! empty($wanted_vocabs)) {
+  if (!empty($wanted_vocabs)) {
     foreach ($wanted_vocabs as $wanted_vocab) {
       if ($wanted_vocab !== 0) {
         $field_name = _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $type, $wanted_vocab);
@@ -113,17 +113,17 @@ function _taxonomy_set_lineage_activate_parents($entity, $tax_field_name) {
       // Are there changes?
       asort($tidsnew);
       asort($tidsold);
-      if (count(array_diff($tidsnew, $tidsold)) > 0 || count(array_diff($tidsold, $tidsnew)) > 0 ) {
+      if (count(array_diff($tidsnew, $tidsold)) > 0 || count(array_diff($tidsold, $tidsnew)) > 0) {
         // This field and language have changed tids, we need to select parents.       
         foreach ($language as $term) {
           // Set up array to keep us from adding a tid multiple times (if one is a parent of more than one selected child)
           // Get full ancestry of term... carefull, it includes our term also.
           $parent_term_objects = taxonomy_get_parents_all($term['tid']);
-          if (count($parent_term_objects) > 1 ) {
+          if (count($parent_term_objects) > 1) {
             foreach ($parent_term_objects as $parent) {
-              // Filter out ourselves, terms added as parents of other terms and 
+              // Filter out ourselves, terms added as parents of other terms and
               // terms already selected during save ($tidsnew).
-              if ($term['tid'] !== $parent->tid && ! in_array($parent->tid, $tidsnew)) {
+              if ($term['tid'] !== $parent->tid && !in_array($parent->tid, $tidsnew)) {
                 $entity->{$tax_field_name}[$lang_code][] = array('tid' => $parent->tid);
                 $tidsnew[] = $parent->tid;
               }

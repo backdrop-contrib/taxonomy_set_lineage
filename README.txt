@@ -1,6 +1,6 @@
 Taxonomy set Lineage
 
-This is a simple module that can automatically select parent terms in a taxonomy.
+This is a simple module that automatically selects parent terms in a taxonomy.
 
 For instance, imagine a "Geography" taxonomy having all continents, countries 
 and cities in a tree structure. Users are then asked to tag a piece of content 
