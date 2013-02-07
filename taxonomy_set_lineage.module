@@ -114,9 +114,8 @@ function _taxonomy_set_lineage_activate_parents($entity, $tax_field_name) {
       asort($tidsnew);
       asort($tidsold);
       if (count(array_diff($tidsnew, $tidsold)) > 0 || count(array_diff($tidsold, $tidsnew)) > 0) {
-        // This field and language have changed tids, we need to select parents.       
+        // This field and language have changed tids, we need to select parents.
         foreach ($language as $term) {
-          // Set up array to keep us from adding a tid multiple times (if one is a parent of more than one selected child)
           // Get full ancestry of term... carefull, it includes our term also.
           $parent_term_objects = taxonomy_get_parents_all($term['tid']);
           if (count($parent_term_objects) > 1) {
