@@ -35,8 +35,8 @@ function taxonomy_set_lineage_menu() {
  */
 function taxonomy_set_lineage_entity_presave($entity, $type) {
 
-  $wanted_vocabs = variable_get('taxonomy_set_lineage_affected_taxonomies', NULL);
-  if (isset($wanted_vocabs)) {
+  $wanted_vocabs = variable_get('taxonomy_set_lineage_affected_taxonomies', array());
+  if (! empty($wanted_vocabs)) {
     foreach ($wanted_vocabs as $wanted_vocab) {
       if ($wanted_vocab !== 0) {
         $field_name = _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $type, $wanted_vocab);
@@ -81,8 +81,9 @@ function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_typ
  * For all languages that are set on this vocabulary we check to see if they 
  * are changed from original entity i.e. were they just edited?
  * If so, we pull down their terms and save lineage (all parent terms) on them. 
- * This follows the principle of least surprise, and prevents us from having 
- * to do heuristics about the translation context.
+ * Only changing the language which was just edited follows the principle of 
+ * least surprise, and prevents us from having to do heuristics about the 
+ * drupal translation context.
  * 
  * @param object $entity
  *   The entity being saved.
@@ -96,13 +97,13 @@ function _taxonomy_set_lineage_activate_parents($entity, $tax_field_name) {
       // Two loops to check for changes. First the new state.
       $tidsnew = array();
       foreach ($language as $term) {
-        $tidsnew[] .= isset($term['tid']) ? $term['tid'] : NULL;
+        $tidsnew[] = isset($term['tid']) ? $term['tid'] : NULL;
       }
       // Now the old version of the entity.
       $tidsold = array();
       if (isset($entity->original->{$tax_field_name}[$lang_code])) {
         foreach ($entity->original->{$tax_field_name}[$lang_code] as $term) {
-          $tidsold[] .= isset($term['tid']) ? $term['tid'] : NULL;
+          $tidsold[] = isset($term['tid']) ? $term['tid'] : NULL;
         }
       }
       // Are there changes?
