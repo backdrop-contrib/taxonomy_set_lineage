@@ -85,6 +85,10 @@ function _taxonomy_set_lineage_vocab_to_instance_field_name($entity, $entity_typ
  * least surprise, and prevents us from having to do heuristics about the 
  * drupal translation context.
  * 
+ * Because this module works on one field at a time, and only fields+languages
+ * that have changed at save time, if you change the taxonomy heirarchy and save
+ * a node, without changing which terms are selected this module will do nothing
+ * 
  * @param object $entity
  *   The entity being saved.
  * @param string $tax_field_name
@@ -109,15 +113,21 @@ function _taxonomy_set_lineage_activate_parents($entity, $tax_field_name) {
       // Are there changes?
       asort($tidsnew);
       asort($tidsold);
-      if (count(array_diff($tidsnew, $tidsold)) > 0) {
-        // Then do it!
+      if (count(array_diff($tidsnew, $tidsold)) > 0 || count(array_diff($tidsold, $tidsnew)) > 0 ) {
+        // This field and language have changed tids, select parents of selected tids.
+        $adding_tids = array();  
         foreach ($language as $term) {
+          // Set up array to keep us from adding a tid multiple times (if one is a parent of more than one selected child)
           // Get full ancestry of term... carefull, it includes our term also.
           $parent_term_objects = taxonomy_get_parents_all($term['tid']);
-          foreach ($parent_term_objects as $parent) {
-            // Filter out ourselves.
-            if ($term['tid'] !== $parent->tid) {
-              $entity->{$tax_field_name}[$lang_code][] = array('tid' => $parent->tid);
+          if (count($parent_term_objects) > 1 ) {
+            foreach ($parent_term_objects as $parent) {
+              // Filter out ourselves.
+              if ($term['tid'] !== $parent->tid && !in_array($parent->tid, $adding_tids)) {
+                $entity->{$tax_field_name}[$lang_code][] = array('tid' => $parent->tid);
+                // Record that we are adding this tid to avoid multiples.
+                $adding_tids[] = $parent->tid;
+              }
             }
           }
         }
