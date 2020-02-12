@@ -1,28 +1,28 @@
 <?php
-
 /**
  * @file
- * Settings forms for Taxonomy Set Lineage 
+ * Admin forms for Taxonomy Set Lineage.
  */
 
 /**
- * Our configuration form.
- * 
- * @param array $form
- *   The configuration form
- * @param array $form_state
- *   The configuration form state
+ * Page callback: Configure the main Taxonomy Set Lineage settings.
  */
 function taxonomy_set_lineage_config_form($form, &$form_state) {
-  $form['taxonomy_set_lineage_affected_taxonomies'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Set lineage in the following vocabularies:'),
-    '#options' => array(),
-    '#description' => t('Checked vocabularies will have parent terms of all selected terms automatically checked.  For instance, in a hypothetical vocabulary "Geography", if "Berlin" is checked, parent terms "Germany" and "Europe" would be automatically checked.  This behavior is true for any field referencing this vocabulary. Note that this does not change rules about the total number of terms that can be selected in a given field or field instance.'),
-    '#default_value' => variable_get('taxonomy_set_lineage_affected_taxonomies', array()),
-  );
-  foreach (taxonomy_vocabulary_get_names() as $vocab) {
-    $form['taxonomy_set_lineage_affected_taxonomies']['#options'][$vocab->machine_name] = check_plain($vocab->name);
+  $form['#config'] = 'taxonomy_set_lineage.settings';
+
+  // Get a list of vocabularies as options for the form element.
+  $vocabularies = array();
+  foreach (taxonomy_get_vocabularies() as $vocabulary) {
+    $vocabularies[$vocabulary->machine_name] = check_plain($vocabulary->name);
   }
+
+  $form['vocabularies'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Automatically set lineage for:'),
+    '#description' => t('Vocabularies selected here will have parent terms automatically selected for content assigned to a child term. Make sure any fields referencing these vocabularies allow enough cardinality to account for all levels of the hierarchy.'),
+    '#options' => $vocabularies,
+    '#default_value' => config_get('taxonomy_set_lineage.settings', 'vocabularies'),
+  );
+
   return system_settings_form($form);
 }

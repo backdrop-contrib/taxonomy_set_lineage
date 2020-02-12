@@ -1,13 +1,13 @@
 <?php
-
 /**
  * @file
- * Installation file for Taxonomy Set Lineage module.
+ * Install, update, and uninstall functions for the Taxonomy Set Lineage module.
  */
 
 /**
- * Implements hook_uninstall().
+ * Convert Drupal variables to Backdrop config.
  */
-function taxonomy_set_lineage_uninstall() {
-  variable_del('taxonomy_set_lineage_affected_taxonomies');
+function taxonomy_set_lineage_update_1000() {
+  config_set('taxonomy_set_lineage.settings', 'vocabularies', update_variable_get('taxonomy_set_lineage_affected_taxonomies', array()));
+  update_variable_del('taxonomy_set_lineage_affected_taxonomies');
 }

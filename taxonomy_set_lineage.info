@@ -1,5 +1,7 @@
 name = Taxonomy Set Lineage
-description = Automatically selects parent terms in chosen vocabularies
-core = 7.x
+description = Automatically selects parent terms when saving content assigned to a child term.
+backdrop = 1.x
+type = module
 dependencies[] = taxonomy
-package = Taxonomy
+package = Categorization
+configure = admin/structure/taxonomy/taxonomy_set_lineage
