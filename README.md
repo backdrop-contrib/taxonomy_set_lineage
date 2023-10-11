@@ -50,6 +50,11 @@ Issues
 Bugs and Feature requests should be reported in the Issue Queue:
 https://github.com/backdrop-contrib/taxonomy_set_lineage/issues.
 
+Current Maintainers
+-------------------
+
+- Seeking maintainer(s)
+
 Credits
 -------
 
